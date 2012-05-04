@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.hibernate.search.bridge.FieldBridge;
 import org.hibernate.search.bridge.LuceneOptions;
 import org.hibernate.search.bridge.ParameterizedBridge;
+import org.hibernate.search.spatial.impl.GeometricConstants;
 import org.hibernate.search.spatial.impl.GridHelper;
 import org.hibernate.search.spatial.impl.Point;
 
@@ -82,13 +83,13 @@ public class SpatialFieldBridgeByGrid implements FieldBridge, ParameterizedBridg
 				if( numericFieldsIndex ) {
 					luceneOptions.addNumericFieldToDocument(
 							GridHelper.formatLatitude( name ),
-							latitude,
+						coordinates.getLatitude() * GeometricConstants.TO_RADIANS_RATIO,
 							document
 					);
 
 					luceneOptions.addNumericFieldToDocument(
 							GridHelper.formatLongitude( name ),
-							longitude,
+						coordinates.getLongitude() * GeometricConstants.TO_RADIANS_RATIO,
 							document
 					);
 				}

@@ -43,7 +43,7 @@ public final class Point implements Coordinates {
 	 * @return a point with coordinates given in degrees
 	 */
 	public static Point fromDegrees(double latitude, double longitude) {
-		return new Point( normalizeLatitude( latitude ), normalizeLongitude( longitude ) );
+		return fromRadians( latitude * GeometricConstants.TO_RADIANS_RATIO, longitude * GeometricConstants.TO_RADIANS_RATIO );
 	}
 
 	/**
@@ -53,7 +53,7 @@ public final class Point implements Coordinates {
 	 * @return a point with coordinates given in degrees
 	 */
 	public static Point fromDegreesInclusive(double latitude, double longitude) {
-		return new Point( normalizeLatitude( latitude ), normalizeLongitudeInclusive( longitude ) );
+		return fromRadiansInclusive( latitude * GeometricConstants.TO_RADIANS_RATIO, longitude * GeometricConstants.TO_RADIANS_RATIO );
 	}
 
 	/**
@@ -66,6 +66,19 @@ public final class Point implements Coordinates {
 			return GeometricConstants.LONGITUDE_DEGREE_RANGE / 2 ;
 		} else {
 			return normalizeLongitudeInclusive( longitude );
+		}
+	}
+
+	/**
+	 * @param longitude in radians
+	 *
+	 * @return longitude normalized in ]-PI;+PI]
+	 */
+	public static double normalizeRadiansLongitude(double longitude) {
+		if(longitude ==  ( -GeometricConstants.LONGITUDE_RADIAN_RANGE / 2 ) ) {
+			return GeometricConstants.LONGITUDE_RADIAN_RANGE / 2 ;
+		} else {
+			return normalizeRadiansLongitudeInclusive( longitude );
 		}
 	}
 
@@ -85,6 +98,29 @@ public final class Point implements Coordinates {
 				_longitude = _longitude + ( GeometricConstants.LONGITUDE_DEGREE_RANGE / 2 );
 			} else {
 				_longitude = _longitude - ( GeometricConstants.LONGITUDE_DEGREE_RANGE / 2 );
+			}
+			return _longitude;
+		} else {
+			return longitude;
+		}
+	}
+
+	/**
+	 * @param longitude in radians
+	 *
+	 * @return longitude normalized in [-PI;+PI]
+	 */
+	public static double normalizeRadiansLongitudeInclusive(double longitude) {
+
+		if( (longitude < -( GeometricConstants.LONGITUDE_RADIAN_RANGE / 2 ) ) || (longitude > ( GeometricConstants.LONGITUDE_RADIAN_RANGE / 2 ) ) ) {
+			double _longitude;
+			// shift PI and normalize full circle turn
+			_longitude = ( ( longitude + ( GeometricConstants.LONGITUDE_RADIAN_RANGE / 2 ) ) % GeometricConstants.WHOLE_CIRCLE_RADIAN_RANGE );
+			// as Java % is not a math modulus we may have negative numbers so the unshift is sign dependant
+			if( _longitude < 0) {
+				_longitude = _longitude + ( GeometricConstants.LONGITUDE_RADIAN_RANGE / 2 );
+			} else {
+				_longitude = _longitude - ( GeometricConstants.LONGITUDE_RADIAN_RANGE / 2 );
 			}
 			return _longitude;
 		} else {
@@ -116,17 +152,49 @@ public final class Point implements Coordinates {
 
 	/**
 	 * @param latitude in radians
+	 *
+	 * @return latitude normalized in [-PI/2;+PI/2]
+	 */
+	public static double normalizeRadiansLatitude(double latitude) {
+		if ( latitude > GeometricConstants.LATITUDE_RADIAN_MAX || latitude < GeometricConstants.LATITUDE_RADIAN_MIN ) {
+			// shift PI/2, normalize full circle turn and 'symmetry' on the lat axis with abs
+			double _latitude = Math.abs( ( latitude + ( GeometricConstants.LATITUDE_RADIAN_RANGE / 2 ) ) % ( GeometricConstants.WHOLE_CIRCLE_RADIAN_RANGE ) );
+			// Push 2nd and 3rd quadran in 1st and 4th by 'symmetry'
+			if( _latitude > GeometricConstants.LATITUDE_RADIAN_RANGE ) {
+				_latitude= GeometricConstants.WHOLE_CIRCLE_RADIAN_RANGE- _latitude;
+			}
+			// unshift
+			_latitude= _latitude - ( GeometricConstants.LATITUDE_RADIAN_RANGE / 2 );
+
+			return _latitude;
+		} else {
+			return latitude;
+		}
+	}
+
+	/**
+	 * @param latitude in radians
 	 * @param longitude in radians
 	 *
 	 * @return a point with coordinates given in radians
 	 */
 	public static Point fromRadians(double latitude, double longitude) {
-		return fromDegrees( latitude * GeometricConstants.TO_DEGREES_RATIO, longitude * GeometricConstants.TO_DEGREES_RATIO);
+		return new Point( normalizeRadiansLatitude( latitude ) , normalizeRadiansLongitude( longitude ));
 	}
 
 	/**
-	 * @param latitude in degrees
-	 * @param longitude in degrees
+	 * @param latitude in radians
+	 * @param longitude in radians
+	 *
+	 * @return a point with coordinates given in radians
+	 */
+	public static Point fromRadiansInclusive(double latitude, double longitude) {
+		return new Point( normalizeRadiansLatitude( latitude ) , normalizeRadiansLongitudeInclusive( longitude ));
+	}
+
+	/**
+	 * @param latitude in radians
+	 * @param longitude in radians
 	 */
 	private Point(double latitude, double longitude) {
 		this.latitude = latitude;
@@ -156,6 +224,38 @@ public final class Point implements Coordinates {
 
 		double destinationLongitudeRadian = getLongitudeRad() + Math.atan2(
 				Math.sin( headingRadian ) * Math.sin(
+						distance / GeometricConstants.EARTH_MEAN_RADIUS_KM
+				) * Math.cos( getLatitudeRad() ),
+				Math.cos( distance / GeometricConstants.EARTH_MEAN_RADIUS_KM ) - Math.sin( getLatitudeRad() ) * Math.sin(
+						destinationLatitudeRadian
+				)
+		);
+
+		return fromRadians( destinationLatitudeRadian, destinationLongitudeRadian );
+	}
+
+	/**
+	 * Calculate end of travel point
+	 *
+	 * @param distance to travel
+	 * @param heading of travel in radians
+	 *
+	 * @return arrival point
+	 *
+	 * @see <a href="http://www.movable-type.co.uk/scripts/latlong.html">Compute destination</a>
+	 */
+	public Point computeRadianDestination(double distance, double heading) {
+
+		double destinationLatitudeRadian = Math.asin(
+				Math.sin( getLatitudeRad() ) * Math.cos( distance / GeometricConstants.EARTH_MEAN_RADIUS_KM ) + Math.cos(
+						getLatitudeRad()
+				) * Math.sin( distance / GeometricConstants.EARTH_MEAN_RADIUS_KM ) * Math.cos(
+						heading
+				)
+		);
+
+		double destinationLongitudeRadian = getLongitudeRad() + Math.atan2(
+				Math.sin( heading ) * Math.sin(
 						distance / GeometricConstants.EARTH_MEAN_RADIUS_KM
 				) * Math.cos( getLatitudeRad() ),
 				Math.cos( distance / GeometricConstants.EARTH_MEAN_RADIUS_KM ) - Math.sin( getLatitudeRad() ) * Math.sin(
@@ -200,22 +300,47 @@ public final class Point implements Coordinates {
 		return c * GeometricConstants.EARTH_MEAN_RADIUS_KM;
 	}
 
+	public double getRadianDistanceTo(Point other) {
+		return getRadianDistanceTo( other.getLatitudeRad(), other.getLongitudeRad() );
+	}
+
+	/**
+	 * Compute distance point and other location given by its latitude and longitude in decimal degrees
+	 *
+	 * @param latitude in decimal degrees
+	 * @param longitude in decimal degrees
+	 *
+	 * @return
+	 *
+	 * @see <a href="http://www.movable-type.co.uk/scripts/latlong.html">Distance haversine formula</a>
+	 */
+	public double getRadianDistanceTo(double latitude, double longitude) {
+		double destinationLatitudeRadians= normalizeRadiansLatitude(  latitude );
+		double destinationLongitudeRadians= normalizeRadiansLongitude( longitude );
+		final double dLat= (destinationLatitudeRadians - getLatitudeRad())/2.0d;
+		final double dLon= (destinationLongitudeRadians - getLongitudeRad())/2.0d;
+		final double a= Math.pow( Math.sin( dLat ), 2) +
+				Math.pow( Math.sin( dLon ), 2) * Math.cos( getLatitudeRad()) * Math.cos( destinationLatitudeRadians );
+		final double c= 2.0d * Math.atan2(Math.sqrt( a ), Math.sqrt( 1.0d - a ));
+		return c * GeometricConstants.EARTH_MEAN_RADIUS_KM;
+	}
+
 	@Override
 	public Double getLatitude() {
-		return latitude;
+		return latitude * GeometricConstants.TO_DEGREES_RATIO;
 	}
 
 	@Override
 	public Double getLongitude() {
-		return longitude;
+		return longitude * GeometricConstants.TO_DEGREES_RATIO;
 	}
 
 	public double getLatitudeRad() {
-		return latitude * GeometricConstants.TO_RADIANS_RATIO;
+		return latitude;
 	}
 
 	public double getLongitudeRad() {
-		return longitude * GeometricConstants.TO_RADIANS_RATIO;
+		return longitude;
 	}
 
 	@Override

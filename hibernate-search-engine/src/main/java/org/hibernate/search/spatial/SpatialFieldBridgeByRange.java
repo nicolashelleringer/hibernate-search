@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 
 import org.hibernate.search.bridge.FieldBridge;
 import org.hibernate.search.bridge.LuceneOptions;
+import org.hibernate.search.spatial.impl.GeometricConstants;
 
 /**
  * Hibernate Search Simple Spatial field bridge, binding a Coordinates to two numeric fields for latitude and Longitude
@@ -54,13 +55,13 @@ public class SpatialFieldBridgeByRange implements FieldBridge {
 
 				luceneOptions.addNumericFieldToDocument(
 						name + "_HSSI_Latitude",
-						latitude,
+					coordinates.getLatitude() * GeometricConstants.TO_RADIANS_RATIO,
 						document
 				);
 
 				luceneOptions.addNumericFieldToDocument(
 						name + "_HSSI_Longitude",
-						longitude,
+					coordinates.getLongitude()  * GeometricConstants.TO_RADIANS_RATIO,
 						document
 				);
 			}

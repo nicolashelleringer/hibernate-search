@@ -189,21 +189,21 @@ public abstract class SpatialQueryBuilderFromPoint {
 		String longitudeFieldName = fieldName + "_HSSI_Longitude";
 
 		Query latQuery= NumericRangeQuery.newDoubleRange(
-				latitudeFieldName, boundingBox.getLowerLeft().getLatitude(),
-				boundingBox.getUpperRight().getLatitude(), true, true
+				latitudeFieldName, boundingBox.getLowerLeft().getLatitudeRad(),
+				boundingBox.getUpperRight().getLatitudeRad(), true, true
 		);
 
 		Query longQuery= null;
 		if ( boundingBox.getLowerLeft().getLongitude() <= boundingBox.getUpperRight().getLongitude() ) {
-			longQuery = NumericRangeQuery.newDoubleRange( longitudeFieldName, boundingBox.getLowerLeft().getLongitude(),
-					boundingBox.getUpperRight().getLongitude(), true, true);
+			longQuery = NumericRangeQuery.newDoubleRange( longitudeFieldName, boundingBox.getLowerLeft().getLongitudeRad(),
+					boundingBox.getUpperRight().getLongitudeRad(), true, true);
 		}
 		else {
 			longQuery= new BooleanQuery();
-			( (BooleanQuery) longQuery).add( NumericRangeQuery.newDoubleRange( longitudeFieldName, boundingBox.getLowerLeft().getLongitude(),
+			( (BooleanQuery) longQuery).add( NumericRangeQuery.newDoubleRange( longitudeFieldName, boundingBox.getLowerLeft().getLongitudeRad(),
 					180.0, true, true), BooleanClause.Occur.SHOULD);
 			( (BooleanQuery) longQuery).add( NumericRangeQuery.newDoubleRange( longitudeFieldName, -180.0,
-					boundingBox.getUpperRight().getLongitude(), true, true), BooleanClause.Occur.SHOULD);
+					boundingBox.getUpperRight().getLongitudeRad(), true, true), BooleanClause.Occur.SHOULD);
 		}
 
 		BooleanQuery boxQuery = new BooleanQuery();

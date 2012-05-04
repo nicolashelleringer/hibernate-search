@@ -120,7 +120,7 @@ public final class DistanceFilter extends Filter {
 
 				double documentDistance;
 
-				documentDistance = center.getDistanceTo( latitudeValues[documentIndex], longitudeValues[documentIndex] );
+				documentDistance = center.getRadianDistanceTo( latitudeValues[documentIndex], longitudeValues[documentIndex] );
 				if ( documentDistance <= radius ) {
 					return true;
 				}
