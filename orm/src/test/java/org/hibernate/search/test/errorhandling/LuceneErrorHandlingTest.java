@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 
 import org.hibernate.search.Environment;
@@ -145,7 +146,7 @@ public class LuceneErrorHandlingTest extends SearchTestCase {
 		public void logWorkDone(LuceneWork work, MassIndexerProgressMonitor monitor) {
 		}
 
-		public void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor) {
+		public void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxonomyWriter, IndexingMonitor monitor) {
 			workcounter.incrementAndGet();
 		}
 
@@ -185,7 +186,7 @@ public class LuceneErrorHandlingTest extends SearchTestCase {
 		public void logWorkDone(LuceneWork work, MassIndexerProgressMonitor monitor) {
 		}
 
-		public void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor) {
+		public void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxonomyWriter, IndexingMonitor monitor) {
 			throw new SearchException( "failed work message" );
 		}
 

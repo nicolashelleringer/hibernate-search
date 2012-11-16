@@ -2,7 +2,7 @@
  * Hibernate, Relational Persistence for Idiomatic Java
  *
  * JBoss, Home of Professional Open Source
- * Copyright 2010-2011 Red Hat Inc. and/or its affiliates and other contributors
+ * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  * See the copyright.txt in the distribution for a
  * full listing of individual contributors.
@@ -22,6 +22,7 @@ package org.hibernate.search.query.engine.impl;
 
 import java.util.Set;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 
@@ -35,16 +36,19 @@ import org.hibernate.search.util.logging.impl.LoggerFactory;
 import static org.hibernate.search.reader.impl.ReaderProviderHelper.getIndexReaders;
 
 /**
-* @author Emmanuel Bernard
+ * @author Emmanuel Bernard
+ * @author Nicolas Helleringer
 */
 public class IndexSearcherWithPayload {
 	private static final Log log = LoggerFactory.make();
 	private final IndexSearcher searcher;
+	private final TaxonomyReader taxonomyReader;
 	private boolean fieldSortDoTrackScores;
 	private boolean fieldSortDoMaxScore;
 
-	public IndexSearcherWithPayload(IndexSearcher searcher, boolean fieldSortDoTrackScores, boolean fieldSortDoMaxScore) {
+	public IndexSearcherWithPayload(IndexSearcher searcher, TaxonomyReader taxonomyReader, boolean fieldSortDoTrackScores, boolean fieldSortDoMaxScore) {
 		this.searcher = searcher;
+		this.taxonomyReader = taxonomyReader;
 		this.fieldSortDoTrackScores = fieldSortDoTrackScores;
 		this.fieldSortDoMaxScore = fieldSortDoMaxScore;
 		searcher.setDefaultFieldSortScoring( fieldSortDoTrackScores, fieldSortDoMaxScore );
@@ -52,6 +56,10 @@ public class IndexSearcherWithPayload {
 
 	public IndexSearcher getSearcher() {
 		return searcher;
+	}
+
+	public TaxonomyReader getTaxonomyReader() {
+		return taxonomyReader;
 	}
 
 	public boolean isFieldSortDoTrackScores() {

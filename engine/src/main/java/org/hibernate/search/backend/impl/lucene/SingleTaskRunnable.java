@@ -20,6 +20,7 @@
  */
 package org.hibernate.search.backend.impl.lucene;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.backend.IndexingMonitor;
 import org.hibernate.search.backend.LuceneWork;
@@ -34,18 +35,20 @@ public class SingleTaskRunnable implements Runnable {
 	private final LuceneWork work;
 	private final LuceneBackendResources resources;
 	private final IndexWriter indexWriter;
+	private final TaxonomyWriter taxonomyWriter;
 	private final IndexingMonitor monitor;
 
-	public SingleTaskRunnable(LuceneWork work, LuceneBackendResources resources, IndexWriter indexWriter, IndexingMonitor monitor) {
+	public SingleTaskRunnable(LuceneWork work, LuceneBackendResources resources, IndexWriter indexWriter, TaxonomyWriter taxonomyWriter, IndexingMonitor monitor) {
 		this.work = work;
 		this.resources = resources;
 		this.indexWriter = indexWriter;
+		this.taxonomyWriter = taxonomyWriter;
 		this.monitor = monitor;
 	}
 
 	@Override
 	public void run() {
-		work.getWorkDelegate( resources.getVisitor() ).performWork( work, indexWriter, monitor );
+		work.getWorkDelegate( resources.getVisitor() ).performWork( work, indexWriter, taxonomyWriter, monitor );
 	}
 
 }

@@ -239,7 +239,7 @@ public class SerializationTest extends SearchTestCase {
 
 		Map<String, String> analyzers = new HashMap<String, String>();
 		analyzers.put( "godo", "ngram" );
-		works.add( new AddLuceneWork( 123, "123", RemoteEntity.class, doc, analyzers ) );
+		works.add( new AddLuceneWork( 123, "123", RemoteEntity.class, doc, null, analyzers ) );
 
 		doc = new Document();
 		doc.setBoost( 2.3f );

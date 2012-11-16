@@ -23,8 +23,11 @@
  */
 package org.hibernate.search.test.query.facet;
 
+import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.search.results.FacetResultNode;
 import org.apache.lucene.search.Query;
 
 import org.hibernate.Session;
@@ -111,6 +114,16 @@ public abstract class AbstractFacetTest extends SearchTestCase {
 		assertEquals( "Wrong number of facets", counts.length, facetList.size() );
 		for ( int i = 0; i < facetList.size(); i++ ) {
 			assertEquals( "Wrong facet count for facet " + i, counts[i], facetList.get( i ).getCount() );
+		}
+	}
+
+	public void assertNativeFacetCounts(FacetResult facetResult, int[] counts) {
+		long resultsCount = facetResult.getFacetResultNode().getNumSubResults();
+		Iterator<? extends FacetResultNode> resultNodes = facetResult.getFacetResultNode().getSubResults().iterator();
+		assertEquals( "Wrong number of facets", counts.length, resultsCount);
+		for ( int i = 0; i < resultsCount; i++ ) {
+			FacetResultNode node = resultNodes.next();
+			assertEquals( "Wrong facet count for facet " + i, counts[i], (int)node.getValue() );
 		}
 	}
 

@@ -141,6 +141,7 @@ public class LuceneWorkHydrator implements LuceneWorksBuilder {
 				objectIdInString( entityClass, id, conversionContext ),
 				entityClass,
 				getLuceneDocument(),
+				null,
 				fieldToAnalyzerMap
 		);
 		results.add( result );
@@ -160,6 +161,7 @@ public class LuceneWorkHydrator implements LuceneWorksBuilder {
 				objectIdInString( entityClass, id, conversionContext ),
 				entityClass,
 				getLuceneDocument(),
+				null,
 				fieldToAnalyzerMap
 		);
 		results.add( result );

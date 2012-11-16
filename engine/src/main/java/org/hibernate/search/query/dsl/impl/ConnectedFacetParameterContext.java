@@ -1,7 +1,7 @@
 /*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2011, Red Hat, Inc. and/or its affiliates or third-party contributors as
+ * Copyright (c) 2012, Red Hat, Inc. and/or its affiliates or third-party contributors as
  * indicated by the @author tags or express copyright attribution
  * statements applied by the authors.  All third-party contributions are
  * distributed under license by Red Hat, Inc.
@@ -24,12 +24,15 @@
 
 package org.hibernate.search.query.dsl.impl;
 
+import org.apache.lucene.facet.search.params.FacetRequest;
+
 import org.hibernate.search.query.dsl.FacetParameterContext;
 import org.hibernate.search.query.facet.FacetingRequest;
 import org.hibernate.search.query.facet.FacetSortOrder;
 
 /**
  * @author Hardy Ferentschik
+ * @author Nicolas Helleringer
  */
 public class ConnectedFacetParameterContext implements FacetParameterContext {
 	private final FacetBuildingContext context;
@@ -55,6 +58,10 @@ public class ConnectedFacetParameterContext implements FacetParameterContext {
 
 	public FacetingRequest createFacetingRequest() {
 		return context.getFacetingRequest();
+	}
+
+	public FacetRequest createNativeFacetingRequest() {
+		return context.getNativeFacetingRequest();
 	}
 }
 

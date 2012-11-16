@@ -1,7 +1,7 @@
 /*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2010-2011, Red Hat, Inc. and/or its affiliates or third-party contributors as
+ * Copyright (c) 2012, Red Hat, Inc. and/or its affiliates or third-party contributors as
  * indicated by the @author tags or express copyright attribution
  * statements applied by the authors.  All third-party contributions are
  * distributed under license by Red Hat, Inc.
@@ -32,9 +32,15 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.facet.search.FacetsCollector;
+import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.results.FacetResult;
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TimeLimitingCollector;
@@ -63,6 +69,7 @@ import org.hibernate.search.spatial.impl.DistanceCollector;
  *
  * @author Hardy Ferentschik
  * @author Sanne Grinovero <sanne@hibernate.org> (C) 2011 Red Hat Inc.
+ * @author Nicolas Helleringer
  */
 public class QueryHits {
 
@@ -73,11 +80,13 @@ public class QueryHits {
 	private final Filter filter;
 	private final Sort sort;
 	private final Map<String, FacetingRequestImpl> facetRequests;
+	private final FacetSearchParams nativeFacetRequests;
 	private final TimeoutManagerImpl timeoutManager;
 
 	private int totalHits;
 	private TopDocs topDocs;
 	private Map<String, List<Facet>> facetMap;
+	private List<FacetResult> nativeFacetResults;
 	private List<FacetCollector> facetCollectors;
 	private DistanceCollector distanceCollector = null;
 
@@ -105,6 +114,7 @@ public class QueryHits {
 					Sort sort,
 					TimeoutManagerImpl timeoutManager,
 					Map<String, FacetingRequestImpl> facetRequests,
+					FacetSearchParams nativeFacetRequests,
 					boolean enableFieldCacheOnTypes,
 					FieldCacheCollectorFactory idFieldCollector,
 					TimeoutExceptionFactory timeoutExceptionFactory,
@@ -113,7 +123,8 @@ public class QueryHits {
 			throws IOException {
 		this(
 				searcher, preparedQuery, filter, sort, DEFAULT_TOP_DOC_RETRIEVAL_SIZE, timeoutManager, facetRequests,
-				enableFieldCacheOnTypes, idFieldCollector, timeoutExceptionFactory, spatialSearchCenter, spatialFieldName
+				nativeFacetRequests, enableFieldCacheOnTypes, idFieldCollector, timeoutExceptionFactory,
+				spatialSearchCenter, spatialFieldName
 		);
 	}
 
@@ -124,6 +135,7 @@ public class QueryHits {
 					Integer n,
 					TimeoutManagerImpl timeoutManager,
 					Map<String, FacetingRequestImpl> facetRequests,
+					FacetSearchParams nativeFacetRequests,
 					boolean enableFieldCacheOnTypes,
 					FieldCacheCollectorFactory idFieldCollector,
 					TimeoutExceptionFactory timeoutExceptionFactory,
@@ -136,6 +148,7 @@ public class QueryHits {
 		this.filter = filter;
 		this.sort = sort;
 		this.facetRequests = facetRequests;
+		this.nativeFacetRequests = nativeFacetRequests;
 		this.enableFieldCacheOnClassName = enableFieldCacheOnTypes;
 		this.idFieldCollectorFactory = idFieldCollector;
 		this.timeoutExceptionFactory = timeoutExceptionFactory;
@@ -207,6 +220,13 @@ public class QueryHits {
 		return facetMap;
 	}
 
+	public List<FacetResult> getNativeFacets() {
+		if ( nativeFacetRequests == null ) {
+			return Collections.emptyList();
+		}
+		return nativeFacetResults;
+	}
+
 	/**
 	 * @param n the number of {@code TopDoc}s to retrieve. The actual retrieved number of {@code TopDoc}s is n or the
 	 * total number of documents if {@code n > maxDoc}
@@ -237,6 +257,15 @@ public class QueryHits {
 		}
 		collector = decorateWithTimeOutCollector( collector );
 
+		//Native Facets handling
+		IndexReader indexReader = searcher.getSearcher().getIndexReader();
+		TaxonomyReader taxoReader = searcher.getTaxonomyReader();
+		FacetsCollector facetsCollector = null;
+		if ( nativeFacetRequests != null && indexReader != null && taxoReader != null ) {
+			facetsCollector = new FacetsCollector( nativeFacetRequests, indexReader, taxoReader );
+			collector = MultiCollector.wrap( collector, facetsCollector );
+		}
+
 		boolean timeoutNow = isImmediateTimeout();
 		if ( !timeoutNow ) {
 			try {
@@ -259,6 +288,9 @@ public class QueryHits {
 				for ( FacetCollector facetCollector : facetCollectors ) {
 					facetMap.put( facetCollector.getFacetName(), facetCollector.getFacetList() );
 				}
+			}
+			if ( facetsCollector != null ) {
+				nativeFacetResults = facetsCollector.getFacetResults();
 			}
 		}
 		else {

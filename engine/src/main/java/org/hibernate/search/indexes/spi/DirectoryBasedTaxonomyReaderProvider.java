@@ -18,47 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA  02110-1301, USA.
  */
-package org.hibernate.search.backend.impl.lucene;
+package org.hibernate.search.indexes.spi;
 
 import java.util.Properties;
 
-import org.hibernate.search.backend.LuceneWork;
 import org.hibernate.search.indexes.impl.DirectoryBasedIndexManager;
-import org.hibernate.search.spi.WorkerBuildContext;
 
 /**
- * @author Sanne Grinovero <sanne@hibernate.org> (C) 2011 Red Hat Inc.
  * @author Nicolas Helleringer
  */
-public class ExclusiveIndexWorkspaceImpl extends AbstractWorkspaceImpl {
+public interface DirectoryBasedTaxonomyReaderProvider extends TaxonomyReaderProvider {
 
-	public ExclusiveIndexWorkspaceImpl(DirectoryBasedIndexManager indexManager, WorkerBuildContext context, Properties cfg) {
-		super( indexManager, context, cfg );
-	}
+	void initialize(DirectoryBasedIndexManager indexManager, Properties props);
 
-	@Override
-	public void afterTransactionApplied(boolean someFailureHappened, boolean streaming) {
-		if ( someFailureHappened ) {
-			writerHolder.forceLockRelease();
-			taxonomyWriterHolder.forceLockRelease();
-		}
-		else {
-			if ( ! streaming ) {
-				writerHolder.commitIndexWriter();
-				taxonomyWriterHolder.commitTaxonomyWriter();
-			}
-		}
-	}
-
-	@Override
-	public void flush() {
-		writerHolder.commitIndexWriter();
-		taxonomyWriterHolder.commitTaxonomyWriter();
-	}
-
-	@Override
-	public void notifyWorkApplied(LuceneWork work) {
-		incrementModificationCounter();
-	}
+	void stop();
 
 }

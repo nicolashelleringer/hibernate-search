@@ -27,6 +27,10 @@ package org.hibernate.search.query.dsl.impl;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.lucene.facet.search.params.CountFacetRequest;
+import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
+
 import org.hibernate.search.SearchException;
 import org.hibernate.search.engine.spi.DocumentBuilderIndexedEntity;
 import org.hibernate.search.engine.spi.EntityIndexBinder;
@@ -170,6 +174,42 @@ class FacetBuildingContext<T> {
 		request.setIncludeZeroCounts( includeZeroCount );
 		request.setMaxNumberOfFacets( maxFacetCount );
 		return request;
+	}
+
+	FacetRequest getNativeFacetingRequest() {
+		FacetRequest facetRequest = null;
+		if ( isRangeQuery ) {
+			//FIXME : TODO
+		}
+		else {
+			facetRequest = new CountFacetRequest( new CategoryPath( fieldName ) , maxFacetCount == -1 ? Integer.MAX_VALUE : maxFacetCount );
+
+			if ( sort == FacetSortOrder.COUNT_ASC ) {
+				facetRequest.setSortOrder( FacetRequest.SortOrder.ASCENDING );
+				facetRequest.setSortBy( FacetRequest.SortBy.VALUE );
+			}
+			else if ( sort == FacetSortOrder.COUNT_DESC ) {
+				facetRequest.setSortOrder( FacetRequest.SortOrder.DESCENDING );
+				facetRequest.setSortBy( FacetRequest.SortBy.VALUE );
+			}
+			else if ( sort == FacetSortOrder.FIELD_VALUE ) {
+				throw new SearchException(
+						"FacetSortOrder.FIELD_VALUE is not supported by native Lucene facets."
+				);
+			}
+			else if ( sort == FacetSortOrder.RANGE_DEFINITION_ODER ) {
+				// inconsistent
+				throw new SearchException(
+						"RANGE_DEFINITION_ODER is not a valid sort order for a discrete faceting request."
+				);
+			}
+			else {
+				throw new SearchException(
+						"Unknown value for FacetSortOrder."
+				);
+			}
+		}
+		return facetRequest;
 	}
 
 	private void assertFacetingFieldExists() {

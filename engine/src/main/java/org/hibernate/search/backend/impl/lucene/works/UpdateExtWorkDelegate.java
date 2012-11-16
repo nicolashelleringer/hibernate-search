@@ -27,6 +27,7 @@ package org.hibernate.search.backend.impl.lucene.works;
 import java.io.Serializable;
 import java.util.Map;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.hibernate.annotations.common.AssertionFailure;
@@ -68,7 +69,7 @@ public final class UpdateExtWorkDelegate extends UpdateWorkDelegate {
 		this.idIsNumeric = DeleteWorkDelegate.isIdNumeric( builder );
 	}
 
-	public void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor) {
+	public void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxoWriter, IndexingMonitor monitor) {
 		checkType( work );
 		final Serializable id = work.getId();
 		try {
@@ -76,7 +77,7 @@ public final class UpdateExtWorkDelegate extends UpdateWorkDelegate {
 				log.tracef( "Deleting %s#%s by query using an IndexWriter#updateDocument as id is Numeric", managedType, id );
 				writer.deleteDocuments( NumericFieldUtils.createExactMatchQuery( builder.getIdKeywordName(), id ) );
 				// no need to log the Add operation as we'll log in the delegate
-				this.addDelegate.performWork( work, writer, monitor );
+				this.addDelegate.performWork( work, writer, taxoWriter, monitor );
 			}
 			else {
 				log.tracef( "Updating %s#%s by id using an IndexWriter#updateDocument.", managedType, id );

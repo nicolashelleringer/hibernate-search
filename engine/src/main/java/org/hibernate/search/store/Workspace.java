@@ -2,7 +2,7 @@
  * Hibernate, Relational Persistence for Idiomatic Java
  *
  * JBoss, Home of Professional Open Source
- * Copyright 2011 Red Hat Inc. and/or its affiliates and other contributors
+ * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  * See the copyright.txt in the distribution for a
  * full listing of individual contributors.
@@ -23,12 +23,14 @@ package org.hibernate.search.store;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.backend.LuceneWork;
 import org.hibernate.search.engine.spi.DocumentBuilderIndexedEntity;
 
 /**
  * @author Sanne Grinovero <sanne@hibernate.org> (C) 2011 Red Hat Inc.
+ * @author Nicolas Helleringer
  */
 public interface Workspace {
 
@@ -58,6 +60,13 @@ public interface Workspace {
 	 * @return a new IndexWriter or an already open one, or null if an error happened.
 	 */
 	IndexWriter getIndexWriter();
+
+	/**
+	 * Gets the TaxonomyWriter, opening one if needed.
+	 *
+	 * @return a new TaxonomyWriter or an already open one, or null if an error happened.
+	 */
+	TaxonomyWriter getTaxonomyWriter();
 
 	/**
 	 * @return The unmodifiable set of entity types being indexed

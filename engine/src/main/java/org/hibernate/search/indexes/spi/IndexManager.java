@@ -2,7 +2,7 @@
  * Hibernate, Relational Persistence for Idiomatic Java
  *
  * JBoss, Home of Professional Open Source
- * Copyright 2011 Red Hat Inc. and/or its affiliates and other contributors
+ * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  * See the copyright.txt in the distribution for a
  * full listing of individual contributors.
@@ -43,6 +43,7 @@ import org.hibernate.search.spi.WorkerBuildContext;
  * of operation. It can ignore some configuration properties or expect additional properties.
  *
  * @author Sanne Grinovero <sanne@hibernate.org> (C) 2011 Red Hat Inc.
+ * @author Nicolas Helleringer
  */
 public interface IndexManager {
 
@@ -59,6 +60,13 @@ public interface IndexManager {
 	 * @return a {@code ReaderProvider} instance for the index managed by this instance
 	 */
 	ReaderProvider getReaderProvider();
+
+	/**
+	 * Provide access to {@code IndexReader}s.
+	 *
+	 * @return a {@code ReaderProvider} instance for the index managed by this instance
+	 */
+	TaxonomyReaderProvider getTaxonomyReaderProvider();
 
 	/**
 	 * Used to apply update operations to the index.

@@ -23,6 +23,7 @@
  */
 package org.hibernate.search.backend.impl.lucene.works;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.store.Workspace;
 import org.hibernate.search.util.logging.impl.Log;
@@ -51,7 +52,7 @@ class OptimizeWorkDelegate implements LuceneWorkDelegate {
 		this.workspace = workspace;
 	}
 
-	public void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor) {
+	public void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxoWriter, IndexingMonitor monitor) {
 		final Class<?> entityType = work.getEntityClass();
 		log.tracef( "optimize Lucene index: %s", entityType );
 		workspace.performOptimization( writer );

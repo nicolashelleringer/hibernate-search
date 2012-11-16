@@ -22,10 +22,12 @@
 package org.hibernate.search.backend;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.hibernate.search.backend.impl.WorkVisitor;
 
 /**
@@ -41,12 +43,21 @@ public class UpdateLuceneWork extends LuceneWork implements Serializable {
 	private final Map<String, String> fieldToAnalyzerMap;
 
 	public UpdateLuceneWork(Serializable id, String idInString, Class<?> entity, Document document) {
-		this( id, idInString, entity, document, null );
+		this( id, idInString, entity, document, null, null );
 	}
 
-	public UpdateLuceneWork(Serializable id, String idInString, Class<?> entity, Document document, Map<String, String> fieldToAnalyzerMap) {
-		super( id, idInString, entity, document );
-		this.fieldToAnalyzerMap = fieldToAnalyzerMap;
+	public UpdateLuceneWork(Serializable id, String idInString, Class<?> entity, Document document, List<CategoryPath> categories) {
+		this( id, idInString, entity, document, categories, null );
+	}
+
+	public UpdateLuceneWork(Serializable id, String idInString, Class<?> entity, Document document, List<CategoryPath> categories, Map<String, String> fieldToAnalyzerMap) {
+		super( id, idInString, entity, document, categories );
+		if ( fieldToAnalyzerMap != null && fieldToAnalyzerMap.isEmpty() ) {
+			this.fieldToAnalyzerMap = null;
+		}
+		else {
+			this.fieldToAnalyzerMap = fieldToAnalyzerMap;
+		}
 	}
 
 	@Override

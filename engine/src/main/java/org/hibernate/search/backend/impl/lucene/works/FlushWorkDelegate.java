@@ -23,6 +23,7 @@
  */
 package org.hibernate.search.backend.impl.lucene.works;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 
 import org.hibernate.search.backend.IndexingMonitor;
@@ -49,7 +50,7 @@ class FlushWorkDelegate implements LuceneWorkDelegate {
 		this.workspace = workspace;
 	}
 
-	public void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor) {
+	public void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxonomyWriter, IndexingMonitor monitor) {
 		log.debug( "performing FlushWorkDelegate" );
 		workspace.flush();
 	}

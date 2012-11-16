@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.backend.IndexingMonitor;
 import org.hibernate.search.backend.LuceneWork;
@@ -103,13 +104,18 @@ final class LuceneBackendQueueTask implements Runnable {
 			log.cannotOpenIndexWriterCausePreviousError();
 			return;
 		}
+		TaxonomyWriter taxonomyWriter = workspace.getTaxonomyWriter( errorContextBuilder );
+		if ( taxonomyWriter == null ) {
+			log.cannotOpenIndexWriterCausePreviousError();
+			return;
+		}
 		LinkedList<LuceneWork> failedUpdates = null;
 		try {
 			ExecutorService executor = resources.getWorkersExecutor();
 			int queueSize = queue.size();
 			Future[] submittedTasks = new Future[ queueSize ];
 			for ( int i = 0; i < queueSize; i++ ) {
-				SingleTaskRunnable task = new SingleTaskRunnable( queue.get( i ), resources, indexWriter, monitor );
+				SingleTaskRunnable task = new SingleTaskRunnable( queue.get( i ), resources, indexWriter, taxonomyWriter, monitor );
 				submittedTasks[i] = executor.submit( task );
 			}
 			// now wait for all tasks being completed before releasing our lock

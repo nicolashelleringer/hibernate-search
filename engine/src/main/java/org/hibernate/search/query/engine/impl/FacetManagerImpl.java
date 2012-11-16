@@ -1,7 +1,7 @@
 /*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2011, Red Hat, Inc. and/or its affiliates or third-party contributors as
+ * Copyright (c) 2012, Red Hat, Inc. and/or its affiliates or third-party contributors as
  * indicated by the @author tags or express copyright attribution
  * statements applied by the authors.  All third-party contributions are
  * distributed under license by Red Hat, Inc.
@@ -28,6 +28,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.facet.search.params.FacetRequest;
+import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.results.FacetResult;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Filter;
@@ -48,6 +51,7 @@ import static org.hibernate.search.util.impl.CollectionHelper.newHashMap;
  * Default implementation of the {@link org.hibernate.search.query.engine.spi.FacetManager} implementation.
  *
  * @author Hardy Ferentschik
+ * @author Nicolas Helleringer
  */
 public class FacetManagerImpl implements FacetManager {
 	/**
@@ -71,6 +75,9 @@ public class FacetManagerImpl implements FacetManager {
 	 */
 	private Filter facetFilter;
 
+	private FacetSearchParams facetSearchParams = null;
+	private List<FacetResult> nativeFacetResults = null;
+
 	/**
 	 * The query from which this manager was retrieved
 	 */
@@ -86,11 +93,19 @@ public class FacetManagerImpl implements FacetManager {
 		return this;
 	}
 
+	public FacetManager enableNativeFaceting(FacetSearchParams facetSearchParams) {
+		this.facetSearchParams = facetSearchParams;
+		queryHasChanged();
+		return this;
+	}
+
 	public void disableFaceting(String facetingName) {
 		facetRequests.remove( facetingName );
 		if ( facetResults != null ) {
 			facetResults.remove( facetingName );
 		}
+		facetSearchParams = null;
+		nativeFacetResults = null;
 		queryHasChanged();
 	}
 
@@ -138,8 +153,51 @@ public class FacetManagerImpl implements FacetManager {
 		return facetRequests;
 	}
 
+	FacetSearchParams getNativeFacetRequests() {
+		return facetSearchParams;
+	}
+
 	void setFacetResults(Map<String, List<Facet>> facetResults) {
 		this.facetResults = facetResults;
+	}
+
+	void setNativeFacetResults(List<FacetResult> facetResults) {
+		this.nativeFacetResults = facetResults;
+	}
+
+	public FacetResult getFacetResult(FacetRequest facetRequest) {
+
+		doSearchWithNativeFacets();
+
+		if ( nativeFacetResults == null || nativeFacetResults.isEmpty() ) {
+			return null;
+		}
+
+		for ( FacetResult facetResult : nativeFacetResults ) {
+			if ( facetResult.getFacetRequest() == facetRequest ) {
+				return facetResult;
+			}
+		}
+
+		return null;
+	}
+
+	public List<FacetResult> getFacetResults() {
+
+		doSearchWithNativeFacets();
+
+		return nativeFacetResults;
+	}
+
+	private void doSearchWithNativeFacets() {
+		if ( facetSearchParams == null ) {
+			return;
+		}
+
+		DocumentExtractor queryDocumentExtractor = query.queryDocumentExtractor();
+		queryDocumentExtractor.close();
+
+		//FIXME : some how go the search with facet collection
 	}
 
 	void queryHasChanged() {

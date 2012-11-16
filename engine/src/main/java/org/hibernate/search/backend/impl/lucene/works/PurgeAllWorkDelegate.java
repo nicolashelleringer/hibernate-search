@@ -23,6 +23,7 @@
  */
 package org.hibernate.search.backend.impl.lucene.works;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 
@@ -53,7 +54,7 @@ class PurgeAllWorkDelegate implements LuceneWorkDelegate {
 		this.workspace = workspace;
 	}
 
-	public void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor) {
+	public void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxonomyWriter, IndexingMonitor monitor) {
 		final Class<?> entityType = work.getEntityClass();
 		log.tracef( "purgeAll Lucene index using IndexWriter for type: %s", entityType );
 		try {

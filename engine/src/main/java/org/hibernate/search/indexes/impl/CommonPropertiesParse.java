@@ -2,7 +2,7 @@
  * Hibernate, Relational Persistence for Idiomatic Java
  *
  * JBoss, Home of Professional Open Source
- * Copyright 2011 Red Hat Inc. and/or its affiliates and other contributors
+ * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  * See the copyright.txt in the distribution for a
  * full listing of individual contributors.
@@ -28,6 +28,7 @@ import org.hibernate.search.SearchException;
 import org.hibernate.search.backend.spi.LuceneIndexingParameters;
 import org.hibernate.search.batchindexing.impl.Executors;
 import org.hibernate.search.indexes.spi.DirectoryBasedReaderProvider;
+import org.hibernate.search.indexes.spi.DirectoryBasedTaxonomyReaderProvider;
 import org.hibernate.search.indexes.spi.IndexManager;
 import org.hibernate.search.spi.WorkerBuildContext;
 import org.hibernate.search.store.optimization.OptimizerStrategy;
@@ -42,6 +43,7 @@ import org.hibernate.search.util.impl.ClassLoaderHelper;
  * of IndexManager implementations.
  *
  * @author Sanne Grinovero <sanne@hibernate.org> (C) 2011 Red Hat Inc.
+ * @author Nicolas Helleringer
  */
 public class CommonPropertiesParse {
 
@@ -164,4 +166,12 @@ public class CommonPropertiesParse {
 		return readerProvider;
 	}
 
+	public static DirectoryBasedTaxonomyReaderProvider createDirectoryBasedTaxonomyReaderProvider(DirectoryBasedIndexManager indexManager, Properties cfg) {
+		Properties props = new MaskedProperty( cfg, Environment.READER_PREFIX );
+		String impl = props.getProperty( "strategy" );
+		DirectoryBasedTaxonomyReaderProvider taxonomyReaderProvider = new NotSharedTaxonomyReaderProvider();
+
+		taxonomyReaderProvider.initialize( indexManager, props );
+		return taxonomyReaderProvider;
+	}
 }

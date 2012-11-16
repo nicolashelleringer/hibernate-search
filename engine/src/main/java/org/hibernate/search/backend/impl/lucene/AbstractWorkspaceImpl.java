@@ -1,7 +1,7 @@
 /*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2010, Red Hat, Inc. and/or its affiliates or third-party contributors as
+ * Copyright (c) 2012, Red Hat, Inc. and/or its affiliates or third-party contributors as
  * indicated by the @author tags or express copyright attribution
  * statements applied by the authors.  All third-party contributions are
  * distributed under license by Red Hat, Inc.
@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.engine.spi.DocumentBuilderIndexedEntity;
 import org.hibernate.search.exception.impl.ErrorContextBuilder;
@@ -45,6 +46,7 @@ import org.hibernate.search.util.logging.impl.LoggerFactory;
  * @author Emmanuel Bernard
  * @author Hardy Ferentschik
  * @author Sanne Grinovero
+ * @author Nicolas Helleringer
  */
 public abstract class AbstractWorkspaceImpl implements Workspace {
 
@@ -55,6 +57,7 @@ public abstract class AbstractWorkspaceImpl implements Workspace {
 	private final DirectoryBasedIndexManager indexManager;
 
 	protected final IndexWriterHolder writerHolder;
+	protected final TaxonomyWriterHolder taxonomyWriterHolder;
 	private boolean indexMetadataIsComplete;
 
 	/**
@@ -67,6 +70,7 @@ public abstract class AbstractWorkspaceImpl implements Workspace {
 		this.optimizerStrategy = indexManager.getOptimizerStrategy();
 		this.entitiesInIndexManager = indexManager.getContainedTypes();
 		this.writerHolder = new IndexWriterHolder( context.getErrorHandler(), indexManager );
+		this.taxonomyWriterHolder = new TaxonomyWriterHolder( context.getErrorHandler(), indexManager );
 		this.indexMetadataIsComplete = CommonPropertiesParse.isIndexMetadataComplete( cfg, context );
 	}
 
@@ -106,6 +110,7 @@ public abstract class AbstractWorkspaceImpl implements Workspace {
 	public void shutDownNow() {
 		log.shuttingDownBackend( indexManager.getIndexName() );
 		writerHolder.closeIndexWriter();
+		taxonomyWriterHolder.closeTaxonomyWriter();
 	}
 
 	@Override
@@ -113,8 +118,17 @@ public abstract class AbstractWorkspaceImpl implements Workspace {
 		return writerHolder.getIndexWriter();
 	}
 
+	@Override
+	public TaxonomyWriter getTaxonomyWriter() {
+		return taxonomyWriterHolder.getTaxonomyWriter();
+	}
+
 	public IndexWriter getIndexWriter(ErrorContextBuilder errorContextBuilder) {
 		return writerHolder.getIndexWriter( errorContextBuilder );
+	}
+
+	public TaxonomyWriter getTaxonomyWriter(ErrorContextBuilder errorContextBuilder) {
+		return taxonomyWriterHolder.getTaxonomyWriter( errorContextBuilder );
 	}
 
 	@Override

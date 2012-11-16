@@ -24,10 +24,12 @@
 package org.hibernate.search.backend;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.hibernate.search.backend.impl.WorkVisitor;
 
 /**
@@ -47,23 +49,33 @@ import org.hibernate.search.backend.impl.WorkVisitor;
 public abstract class LuceneWork implements Serializable {
 
 	private final Document document;
+	private final List<CategoryPath> categories;
 	private final Class<?> entityClass;
 	private final Serializable id;
 	private final String idInString;
 
 	public LuceneWork(Serializable id, String idInString, Class<?> entity) {
-		this( id, idInString, entity, null );
+		this( id, idInString, entity, null, null );
 	}
 
 	public LuceneWork(Serializable id, String idInString, Class<?> entity, Document document) {
+		this( id, idInString, entity, document, null);
+	}
+
+	public LuceneWork(Serializable id, String idInString, Class<?> entity, Document document, List<CategoryPath> categories) {
 		this.id = id;
 		this.idInString = idInString;
 		this.entityClass = entity;
 		this.document = document;
+		this.categories = categories;
 	}
 
 	public Document getDocument() {
 		return document;
+	}
+
+	public List<CategoryPath> getCategories() {
+		return categories;
 	}
 
 	public Class<?> getEntityClass() {

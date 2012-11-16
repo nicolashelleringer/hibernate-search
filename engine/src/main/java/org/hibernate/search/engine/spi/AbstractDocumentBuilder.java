@@ -83,10 +83,12 @@ import org.hibernate.search.bridge.spi.ConversionContext;
 import org.hibernate.search.engine.BoostStrategy;
 import org.hibernate.search.engine.impl.AnnotationProcessingHelper;
 import org.hibernate.search.engine.impl.DefaultBoostStrategy;
+import org.hibernate.search.engine.impl.FacetMetadata;
 import org.hibernate.search.engine.impl.FieldMetadata;
 import org.hibernate.search.engine.impl.LuceneOptionsImpl;
 import org.hibernate.search.engine.impl.WorkPlan;
 import org.hibernate.search.impl.ConfigContext;
+import org.hibernate.search.annotations.Facet;
 import org.hibernate.search.spatial.Coordinates;
 import org.hibernate.search.spi.InstanceInitializer;
 import org.hibernate.search.util.impl.ClassLoaderHelper;
@@ -483,6 +485,7 @@ public abstract class AbstractDocumentBuilder<T> {
 												boolean disableOptimizations, PathsContext pathsContext) {
 		checkForField( classHostingMember, member, propertiesMetadata, prefix, context, pathsContext );
 		checkForFields( classHostingMember, member, propertiesMetadata, prefix, context, pathsContext );
+		checkForFacet( classHostingMember, member, propertiesMetadata, prefix, context, pathsContext );
 		checkForSpatial( classHostingMember, member, propertiesMetadata, prefix, context, pathsContext );
 		checkForSpatials( classHostingMember, member, propertiesMetadata, prefix, context, pathsContext );
 		checkForAnalyzerDefs( member, context );
@@ -605,7 +608,7 @@ public abstract class AbstractDocumentBuilder<T> {
 			}
 		}
 		if ( ( fieldAnn == null && idAnn == null ) && numericFieldAnn != null ) {
-			throw new SearchException( "@NumericField without a @Field on property '" + member.getName() + "'" );
+			throw new SearchException( "@NumericField without a @Field on property '" + member.getName() + "'" ); // Could be a @NumericField for a @Facet annotation
 		}
 	}
 
@@ -651,6 +654,16 @@ public abstract class AbstractDocumentBuilder<T> {
 		if ( spatialAnn != null ) {
 			if ( isFieldInPath( spatialAnn, member, pathsContext, prefix ) || level <= maxLevel ) {
 				bindSpatialAnnotation( classHostingMember, member, propertiesMetadata, prefix, spatialAnn, context );
+			}
+		}
+	}
+
+	private void checkForFacet(XClass classHostingMember, XProperty member, PropertiesMetadata propertiesMetadata, String prefix, ConfigContext context, PathsContext pathsContext) {
+		Facet facetAnn = member.getAnnotation( Facet.class );
+		NumericField numericFieldAnn = member.getAnnotation( NumericField.class );
+		if ( facetAnn != null ) {
+			if ( isFieldInPath( facetAnn, member, pathsContext, prefix ) || level <= maxLevel ) {
+				bindFacetAnnotation( classHostingMember, member, propertiesMetadata, prefix, facetAnn, numericFieldAnn, context );
 			}
 		}
 	}
@@ -959,7 +972,7 @@ public abstract class AbstractDocumentBuilder<T> {
 		}
 		else {
 			NumericField numericField = member.getAnnotation( NumericField.class );
-			FieldBridge fieldBridge = BridgeFactory.guessType( null, numericField, member, reflectionManager );
+			FieldBridge fieldBridge = BridgeFactory.guessType( (org.hibernate.search.annotations.Field)null, numericField, member, reflectionManager );
 			if ( fieldBridge instanceof StringBridge ) {
 				fieldBridge = new NullEncodingFieldBridge( (StringBridge) fieldBridge, indexNullAs );
 			}
@@ -1097,7 +1110,7 @@ public abstract class AbstractDocumentBuilder<T> {
 									String prefix,
 									Spatial spatialAnnotation,
 									ConfigContext context) {
-		if ( spatialNames.contains( spatialAnnotation.name() )) {
+		if ( spatialNames.contains( spatialAnnotation.name() ) ) {
 			throw log.cannotHaveTwoSpatialsWithDefaultOrSameName( classHostingMember.getName() );
 		}
 		spatialNames.add( spatialAnnotation.name() );
@@ -1108,6 +1121,42 @@ public abstract class AbstractDocumentBuilder<T> {
 		if ( member.isCollection() ) {
 			fieldCollectionRoles.add( StringHelper.qualify( classHostingMember.getName(), member.getName() ) );
 		}
+	}
+
+	private void bindFacetAnnotation(XClass classHostingMember,
+										XProperty member,
+										PropertiesMetadata propertiesMetadata,
+										String prefix,
+										Facet facetAnnotation,
+										NumericField numericFieldAnnotation,
+										ConfigContext context) {
+		FacetMetadata facetMetadata = new FacetMetadata( prefix, member, facetAnnotation, numericFieldAnnotation, context, reflectionManager );
+		facetMetadata.appendToPropertiesMetadata( propertiesMetadata );
+
+		if ( member.isCollection() ) {
+			fieldCollectionRoles.add( StringHelper.qualify( classHostingMember.getName(), member.getName() ) );
+		}
+
+		/*
+		String facetPath;
+		if ( facetAnnotation.path().equals( "" ) ) {
+				facetPath = classHostingMember.getName() + "/" + member.getName();
+		}
+		else if ( facetAnnotation.path().endsWith( "/" ) ) {
+			facetPath = facetAnnotation.path() + member.getName();
+		}
+		else {
+			facetPath = facetAnnotation.path();
+		}
+
+		facetPath += "/" + member.;  /// Should use bridge as in @Field
+
+		if ( facetPaths.contains( facetPath ) ) {
+			throw log.cannotHaveTwoFacetsWithDefaultOrSamePath( classHostingMember.getName() );
+		}
+		else {
+			facetPaths.add( facetPath );
+		}*/
 	}
 
 	protected Integer getPrecisionStep(NumericField numericFieldAnn) {
@@ -1409,8 +1458,15 @@ public abstract class AbstractDocumentBuilder<T> {
 		public final List<BoostStrategy> dynamicFieldBoosts = new ArrayList<BoostStrategy>();
 		public final List<Integer> precisionSteps = new ArrayList<Integer>();
 		public final List<String> fieldNullTokens = new LinkedList<String>();
-
 		public final List<Field.TermVector> fieldTermVectors = new ArrayList<Field.TermVector>();
+
+		public final Map<String, Integer> facetPathToPositionMap = new HashMap<String, Integer>();
+		public final List<String> facetPaths = new ArrayList<String>();
+		public final List<XMember> facetGetters = new ArrayList<XMember>();
+		public final List<String> facetGetterNames = new ArrayList<String>();
+		public final List<StringBridge> facetBridges = new ArrayList<StringBridge>();
+		public final List<String> facetNullTokens = new LinkedList<String>();
+
 		public final List<XMember> embeddedGetters = new ArrayList<XMember>();
 		public final List<String> embeddedFieldNames = new ArrayList<String>();
 		public final List<String> embeddedNullTokens = new ArrayList<String>();

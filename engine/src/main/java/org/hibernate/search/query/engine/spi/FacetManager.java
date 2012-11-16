@@ -1,7 +1,7 @@
 /*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2011, Red Hat, Inc. and/or its affiliates or third-party contributors as
+ * Copyright (c) 2012, Red Hat, Inc. and/or its affiliates or third-party contributors as
  * indicated by the @author tags or express copyright attribution
  * statements applied by the authors.  All third-party contributions are
  * distributed under license by Red Hat, Inc.
@@ -25,6 +25,9 @@ package org.hibernate.search.query.engine.spi;
 
 import java.util.List;
 
+import org.apache.lucene.facet.search.params.FacetSearchParams;
+import org.apache.lucene.facet.search.results.FacetResult;
+
 import org.hibernate.search.query.facet.Facet;
 import org.hibernate.search.query.facet.FacetSelection;
 import org.hibernate.search.query.facet.FacetingRequest;
@@ -33,6 +36,7 @@ import org.hibernate.search.query.facet.FacetingRequest;
  * Interface defining methods around faceting.
  *
  * @author Hardy Ferentschik
+ * @author Nicolas Helleringer
  */
 public interface FacetManager {
 	/**
@@ -42,6 +46,8 @@ public interface FacetManager {
 	 * @return {@code this} to allow method chaining
 	 */
 	FacetManager enableFaceting(FacetingRequest facetingRequest);
+
+	FacetManager enableNativeFaceting(FacetSearchParams facetSearchParams);
 
 	/**
 	 * Disable a facet with the given name.
@@ -59,6 +65,8 @@ public interface FacetManager {
 	 * @see #enableFaceting(org.hibernate.search.query.facet.FacetingRequest)
 	 */
 	List<Facet> getFacets(String facetingName);
+
+	List<FacetResult> getFacetResults();
 
 	/**
 	 * Returns a instance of {@code FacetSelection} instance in order to apply a disjunction of facet criteria on

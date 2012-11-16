@@ -39,6 +39,7 @@ import org.hibernate.annotations.common.reflection.ReflectionManager;
 import org.hibernate.annotations.common.reflection.XClass;
 import org.hibernate.annotations.common.reflection.XMember;
 import org.hibernate.search.annotations.ClassBridge;
+import org.hibernate.search.annotations.Facet;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.NumericField;
 import org.hibernate.search.annotations.Parameter;
@@ -46,6 +47,7 @@ import org.hibernate.search.annotations.Resolution;
 import org.hibernate.search.annotations.Spatial;
 import org.hibernate.search.annotations.SpatialMode;
 import org.hibernate.search.bridge.AppliedOnTypeAwareBridge;
+import org.hibernate.search.bridge.StringBridge;
 import org.hibernate.search.bridge.FieldBridge;
 import org.hibernate.search.bridge.ParameterizedBridge;
 import org.hibernate.search.bridge.TwoWayFieldBridge;
@@ -67,7 +69,6 @@ import org.hibernate.search.bridge.builtin.LongBridge;
 import org.hibernate.search.bridge.builtin.LongNumericFieldBridge;
 import org.hibernate.search.bridge.builtin.NumericFieldBridge;
 import org.hibernate.search.bridge.builtin.ShortBridge;
-import org.hibernate.search.bridge.builtin.StringBridge;
 import org.hibernate.search.bridge.builtin.UUIDBridge;
 import org.hibernate.search.bridge.builtin.UriBridge;
 import org.hibernate.search.bridge.builtin.UrlBridge;
@@ -92,21 +93,36 @@ import org.hibernate.search.util.logging.impl.LoggerFactory;
  * @author John Griffin
  */
 public final class BridgeFactory {
+	private static Map<String, StringBridge> builtInStringBridges = new HashMap<String, StringBridge>();
 
-	public static final TwoWayFieldBridge CHARACTER = new TwoWayString2FieldBridgeAdaptor( new CharacterBridge() );
-	public static final TwoWayFieldBridge DOUBLE = new TwoWayString2FieldBridgeAdaptor( new DoubleBridge() );
-	public static final TwoWayFieldBridge FLOAT = new TwoWayString2FieldBridgeAdaptor( new FloatBridge() );
-	public static final TwoWayFieldBridge SHORT = new TwoWayString2FieldBridgeAdaptor( new ShortBridge() );
-	public static final TwoWayFieldBridge INTEGER = new TwoWayString2FieldBridgeAdaptor( new IntegerBridge() );
-	public static final TwoWayFieldBridge LONG = new TwoWayString2FieldBridgeAdaptor( new LongBridge() );
-	public static final TwoWayFieldBridge BIG_INTEGER = new TwoWayString2FieldBridgeAdaptor( new BigIntegerBridge() );
-	public static final TwoWayFieldBridge BIG_DECIMAL = new TwoWayString2FieldBridgeAdaptor( new BigDecimalBridge() );
-	public static final TwoWayFieldBridge STRING = new TwoWayString2FieldBridgeAdaptor( new StringBridge() );
-	public static final TwoWayFieldBridge BOOLEAN = new TwoWayString2FieldBridgeAdaptor( new BooleanBridge() );
-	public static final TwoWayFieldBridge CLAZZ = new TwoWayString2FieldBridgeAdaptor( new org.hibernate.search.bridge.builtin.ClassBridge() );
-	public static final TwoWayFieldBridge Url = new TwoWayString2FieldBridgeAdaptor( new UrlBridge() );
-	public static final TwoWayFieldBridge Uri = new TwoWayString2FieldBridgeAdaptor( new UriBridge() );
-	public static final TwoWayFieldBridge UUID = new TwoWayString2FieldBridgeAdaptor( new UUIDBridge() );
+	public static final TwoWayStringBridge CHARACTER_STR = new CharacterBridge();
+	public static final TwoWayFieldBridge CHARACTER = new TwoWayString2FieldBridgeAdaptor( CHARACTER_STR );
+	public static final TwoWayStringBridge DOUBLE_STR = new DoubleBridge();
+	public static final TwoWayFieldBridge DOUBLE = new TwoWayString2FieldBridgeAdaptor( DOUBLE_STR );
+	public static final TwoWayStringBridge FLOAT_STR = new FloatBridge();
+	public static final TwoWayFieldBridge FLOAT = new TwoWayString2FieldBridgeAdaptor( FLOAT_STR );
+	public static final TwoWayStringBridge SHORT_STR = new ShortBridge();
+	public static final TwoWayFieldBridge SHORT = new TwoWayString2FieldBridgeAdaptor( SHORT_STR );
+	public static final TwoWayStringBridge INTEGER_STR = new IntegerBridge();
+	public static final TwoWayFieldBridge INTEGER = new TwoWayString2FieldBridgeAdaptor( INTEGER_STR );
+	public static final TwoWayStringBridge LONG_STR = new LongBridge();
+	public static final TwoWayFieldBridge LONG = new TwoWayString2FieldBridgeAdaptor( LONG_STR );
+	public static final TwoWayStringBridge BIG_INTEGER_STR = new BigIntegerBridge();
+	public static final TwoWayFieldBridge BIG_INTEGER = new TwoWayString2FieldBridgeAdaptor( BIG_INTEGER_STR );
+	public static final TwoWayStringBridge BIG_DECIMAL_STR = new BigDecimalBridge();
+	public static final TwoWayFieldBridge BIG_DECIMAL = new TwoWayString2FieldBridgeAdaptor( BIG_DECIMAL_STR );
+	public static final TwoWayStringBridge STRING_STR = new org.hibernate.search.bridge.builtin.StringBridge();
+	public static final TwoWayFieldBridge STRING = new TwoWayString2FieldBridgeAdaptor( STRING_STR );
+	public static final TwoWayStringBridge BOOLEAN_STR = new BooleanBridge();
+	public static final TwoWayFieldBridge BOOLEAN = new TwoWayString2FieldBridgeAdaptor( BOOLEAN_STR );
+	public static final TwoWayStringBridge CLAZZ_STR = new org.hibernate.search.bridge.builtin.ClassBridge();
+	public static final TwoWayFieldBridge CLAZZ = new TwoWayString2FieldBridgeAdaptor( CLAZZ_STR );
+	public static final TwoWayStringBridge Url_STR = new UrlBridge();
+	public static final TwoWayFieldBridge Url = new TwoWayString2FieldBridgeAdaptor( Url_STR );
+	public static final TwoWayStringBridge Uri_STR = new UriBridge();
+	public static final TwoWayFieldBridge Uri = new TwoWayString2FieldBridgeAdaptor( Uri_STR );
+	public static final TwoWayStringBridge UUID_STR = new UUIDBridge();
+	public static final TwoWayFieldBridge UUID = new TwoWayString2FieldBridgeAdaptor( UUID_STR );
 
 	public static final FieldBridge DATE_YEAR = new TwoWayString2FieldBridgeAdaptor( DateBridge.DATE_YEAR );
 	public static final FieldBridge DATE_MONTH = new TwoWayString2FieldBridgeAdaptor( DateBridge.DATE_MONTH );
@@ -203,26 +219,47 @@ public final class BridgeFactory {
 
 	static {
 		builtInBridges.put( Character.class.getName(), CHARACTER );
+		builtInStringBridges.put( Character.class.getName(), CHARACTER_STR);
 		builtInBridges.put( char.class.getName(), CHARACTER );
+		builtInStringBridges.put( char.class.getName(), CHARACTER_STR );
 		builtInBridges.put( Double.class.getName(), DOUBLE );
+		builtInStringBridges.put( Double.class.getName(), DOUBLE_STR );
 		builtInBridges.put( double.class.getName(), DOUBLE );
+		builtInStringBridges.put( double.class.getName(), DOUBLE_STR );
 		builtInBridges.put( Float.class.getName(), FLOAT );
+		builtInStringBridges.put( Float.class.getName(), FLOAT_STR );
 		builtInBridges.put( float.class.getName(), FLOAT );
+		builtInStringBridges.put( float.class.getName(), FLOAT_STR );
 		builtInBridges.put( Short.class.getName(), SHORT );
+		builtInStringBridges.put( Short.class.getName(), SHORT_STR );
 		builtInBridges.put( short.class.getName(), SHORT );
+		builtInStringBridges.put( short.class.getName(), SHORT_STR );
 		builtInBridges.put( Integer.class.getName(), INTEGER );
+		builtInStringBridges.put( Integer.class.getName(), INTEGER_STR );
 		builtInBridges.put( int.class.getName(), INTEGER );
+		builtInStringBridges.put( int.class.getName(), INTEGER_STR );
 		builtInBridges.put( Long.class.getName(), LONG );
+		builtInStringBridges.put( Long.class.getName(), LONG_STR );
 		builtInBridges.put( long.class.getName(), LONG );
+		builtInStringBridges.put( long.class.getName(), LONG_STR );
 		builtInBridges.put( BigInteger.class.getName(), BIG_INTEGER );
+		builtInStringBridges.put( BigInteger.class.getName(), BIG_INTEGER_STR );
 		builtInBridges.put( BigDecimal.class.getName(), BIG_DECIMAL );
+		builtInStringBridges.put( BigDecimal.class.getName(), BIG_DECIMAL_STR );
 		builtInBridges.put( String.class.getName(), STRING );
+		builtInStringBridges.put( String.class.getName(), STRING_STR );
 		builtInBridges.put( Boolean.class.getName(), BOOLEAN );
+		builtInStringBridges.put( Boolean.class.getName(), BOOLEAN_STR );
 		builtInBridges.put( boolean.class.getName(), BOOLEAN );
+		builtInStringBridges.put( boolean.class.getName(), BOOLEAN_STR );
 		builtInBridges.put( Class.class.getName(), CLAZZ );
+		builtInStringBridges.put( Class.class.getName(), CLAZZ_STR );
 		builtInBridges.put( URL.class.getName(), Url );
+		builtInStringBridges.put( URL.class.getName(), Url_STR );
 		builtInBridges.put( URI.class.getName(), Uri );
+		builtInStringBridges.put( URI.class.getName(), Uri_STR );
 		builtInBridges.put( UUID.class.getName(), UUID );
+		builtInStringBridges.put( UUID.class.getName(), UUID_STR );
 
 		builtInBridges.put( Date.class.getName(), DATE_MILLISECOND );
 		builtInBridges.put( Calendar.class.getName(), CALENDAR_MILLISECOND );
@@ -416,6 +453,19 @@ public final class BridgeFactory {
 				bridge = guessEmbeddedFieldBridge( member, reflectionManager );
 			}
 		}
+		if ( bridge == null ) {
+			throw LOG.unableToGuessFieldBridge( member.getType().getName(), member.getName() );
+		}
+		return bridge;
+	}
+
+	public static StringBridge guessFacetType(Facet facet, NumericField numericField, XMember member, ReflectionManager reflectionManager) {
+		StringBridge bridge;
+
+		//find in built-ins
+		XClass returnType = member.getClassOrElementClass();
+		bridge = builtInStringBridges.get( returnType.getName() );
+
 		if ( bridge == null ) {
 			throw LOG.unableToGuessFieldBridge( member.getType().getName(), member.getName() );
 		}

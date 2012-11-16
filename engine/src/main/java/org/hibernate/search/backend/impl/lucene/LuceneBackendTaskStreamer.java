@@ -22,6 +22,7 @@ package org.hibernate.search.backend.impl.lucene;
 
 import java.util.concurrent.locks.Lock;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.backend.IndexingMonitor;
 import org.hibernate.search.backend.LuceneWork;
@@ -57,13 +58,14 @@ final class LuceneBackendTaskStreamer {
 		modificationLock.lock();
 		try {
 			IndexWriter indexWriter = workspace.getIndexWriter();
+			TaxonomyWriter taxoWriter = workspace.getTaxonomyWriter();
 			if ( indexWriter == null ) {
 				log.cannotOpenIndexWriterCausePreviousError();
 				return;
 			}
 			boolean errors = true;
 			try {
-				work.getWorkDelegate( workVisitor ).performWork( work, indexWriter, monitor );
+				work.getWorkDelegate( workVisitor ).performWork( work, indexWriter, taxoWriter, monitor );
 				errors = false;
 			}
 			finally {

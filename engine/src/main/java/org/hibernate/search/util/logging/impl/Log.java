@@ -704,4 +704,7 @@ public interface Log extends BasicLogger {
 	@Message(id = 176, value = "Document could not be parsed")
 	SearchException unableToParseDocument(@Cause Throwable cause);
 
+	@Message(id = 177, value = "Class %1$s cannot have two @Facet using default/same path")
+	SearchException cannotHaveTwoFacetsWithDefaultOrSamePath(String className);
+
 }

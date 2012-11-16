@@ -2,7 +2,7 @@
  * Hibernate, Relational Persistence for Idiomatic Java
  *
  * JBoss, Home of Professional Open Source
- * Copyright 2011 Red Hat Inc. and/or its affiliates and other contributors
+ * Copyright 2012 Red Hat Inc. and/or its affiliates and other contributors
  * as indicated by the @authors tag. All rights reserved.
  * See the copyright.txt in the distribution for a
  * full listing of individual contributors.
@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -77,6 +78,7 @@ import static org.hibernate.search.util.impl.FilterCacheModeTypeHelper.cacheResu
 /**
  * @author Emmanuel Bernard <emmanuel@hibernate.org>
  * @author Hardy Ferentschik <hardy@hibernate.org>
+ * @author Nicolas Hellleringer
  */
 public class HSQueryImpl implements HSQuery, Serializable {
 	private static final Log log = LoggerFactory.make();
@@ -430,6 +432,7 @@ public class HSQueryImpl implements HSQuery, Serializable {
 					sort,
 					getTimeoutManagerImpl(),
 					facetManager.getFacetRequests(),
+					facetManager.getNativeFacetRequests(),
 					useFieldCacheOnTypes(),
 					getAppropriateIdFieldCollectorFactory(),
 					this.timeoutExceptionFactory,
@@ -445,6 +448,7 @@ public class HSQueryImpl implements HSQuery, Serializable {
 					null,
 					0,
 					getTimeoutManagerImpl(),
+					null,
 					null,
 					false,
 					null,
@@ -462,6 +466,7 @@ public class HSQueryImpl implements HSQuery, Serializable {
 					n,
 					getTimeoutManagerImpl(),
 					facetManager.getFacetRequests(),
+					facetManager.getNativeFacetRequests(),
 					useFieldCacheOnTypes(),
 					getAppropriateIdFieldCollectorFactory(),
 					this.timeoutExceptionFactory,
@@ -476,6 +481,7 @@ public class HSQueryImpl implements HSQuery, Serializable {
 					.searchExecuted( filteredQuery.toString(), System.nanoTime() - startTime );
 		}
 		facetManager.setFacetResults( queryHits.getFacets() );
+		facetManager.setNativeFacetResults( queryHits.getNativeFacets() );
 		return queryHits;
 	}
 
@@ -614,13 +620,29 @@ public class HSQueryImpl implements HSQuery, Serializable {
 		);
 		is.setSimilarity( searcherSimilarity );
 
+		//handle taxonomy reader if required
+		TaxonomyReader taxoReader = null;
+		if ( facetManager != null && facetManager.getNativeFacetRequests() != null ) {
+			if ( targetedIndexes.size() == 0 ) {
+				//nothing to do
+			}
+			else if ( targetedIndexes.size() == 1 ) {
+				//Here we can native facet
+				taxoReader = targetedIndexes.iterator().next().getTaxonomyReaderProvider().openTaxonomyReader();
+			}
+			else {
+				throw new SearchException(
+						"Cannot perform native facetted search on more than one entity" );
+			}
+		}
+
 		//handle the sort and projection
 		final String[] projection = this.projectedFields;
 		if ( Boolean.TRUE.equals( forceScoring ) ) {
-			return new IndexSearcherWithPayload( is, true, true );
+			return new IndexSearcherWithPayload( is, taxoReader, true, true);
 		}
 		else if ( Boolean.FALSE.equals( forceScoring ) ) {
-			return new IndexSearcherWithPayload( is, false, false );
+			return new IndexSearcherWithPayload( is, taxoReader, false, false );
 		}
 		else if ( this.sort != null && projection != null ) {
 			boolean activate = false;
@@ -631,11 +653,11 @@ public class HSQueryImpl implements HSQuery, Serializable {
 				}
 			}
 			if ( activate ) {
-				return new IndexSearcherWithPayload( is, true, false );
+				return new IndexSearcherWithPayload( is, taxoReader, true, false );
 			}
 		}
 		//default
-		return new IndexSearcherWithPayload( is, false, false );
+		return new IndexSearcherWithPayload( is, taxoReader, false, false );
 	}
 
 	private Similarity checkSimilarity(Similarity similarity, DocumentBuilderIndexedEntity builder) {

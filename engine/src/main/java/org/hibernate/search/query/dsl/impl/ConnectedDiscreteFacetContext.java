@@ -24,6 +24,8 @@
 
 package org.hibernate.search.query.dsl.impl;
 
+import org.apache.lucene.facet.search.params.FacetRequest;
+
 import org.hibernate.search.query.dsl.DiscreteFacetContext;
 import org.hibernate.search.query.dsl.FacetParameterContext;
 import org.hibernate.search.query.facet.FacetSortOrder;
@@ -56,6 +58,10 @@ public class ConnectedDiscreteFacetContext implements DiscreteFacetContext {
 
 	public FacetingRequest createFacetingRequest() {
 		return context.getFacetingRequest();
+	}
+
+	public FacetRequest createNativeFacetingRequest() {
+		return context.getNativeFacetingRequest();
 	}
 }
 

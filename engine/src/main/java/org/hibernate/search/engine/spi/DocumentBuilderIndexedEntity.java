@@ -1,7 +1,7 @@
 /*
  * Hibernate, Relational Persistence for Idiomatic Java
  *
- * Copyright (c) 2010, Red Hat, Inc. and/or its affiliates or third-party contributors as
+ * Copyright (c) 2012, Red Hat, Inc. and/or its affiliates or third-party contributors as
  * indicated by the @author tags or express copyright attribution
  * statements applied by the authors.  All third-party contributions are
  * distributed under license by Red Hat, Inc.
@@ -32,6 +32,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,6 +40,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.facet.taxonomy.CategoryPath;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Similarity;
 
@@ -94,6 +96,7 @@ import org.hibernate.search.util.logging.impl.LoggerFactory;
  * @author Sylvain Vieujot
  * @author Richard Hallier
  * @author Hardy Ferentschik
+ * @author Nicolas Helleringer
  */
 public class DocumentBuilderIndexedEntity<T> extends AbstractDocumentBuilder<T> {
 	private static final Log log = LoggerFactory.make();
@@ -410,27 +413,17 @@ public class DocumentBuilderIndexedEntity<T> extends AbstractDocumentBuilder<T> 
 	public AddLuceneWork createAddWork(Class<T> entityClass, T entity, Serializable id, String idInString, InstanceInitializer sessionInitializer, ConversionContext conversionContext) {
 		Map<String, String> fieldToAnalyzerMap = new HashMap<String, String>();
 		Document doc = getDocument( entity, id, fieldToAnalyzerMap, sessionInitializer, conversionContext );
-		final AddLuceneWork addWork;
-		if ( fieldToAnalyzerMap.isEmpty() ) {
-			addWork = new AddLuceneWork( id, idInString, entityClass, doc );
-		}
-		else {
-			addWork = new AddLuceneWork( id, idInString, entityClass, doc, fieldToAnalyzerMap );
-		}
-		return addWork;
+		List<CategoryPath> categories = getCategories( entity, id, fieldToAnalyzerMap, sessionInitializer, conversionContext );
+
+		return new AddLuceneWork( id, idInString, entityClass, doc, categories, fieldToAnalyzerMap );
 	}
 
 	public UpdateLuceneWork createUpdateWork(Class<T> entityClass, T entity, Serializable id, String idInString, InstanceInitializer sessionInitializer, ConversionContext contextualBridge) {
 		Map<String, String> fieldToAnalyzerMap = new HashMap<String, String>();
 		Document doc = getDocument( entity, id, fieldToAnalyzerMap, sessionInitializer, contextualBridge );
-		final UpdateLuceneWork addWork;
-		if ( fieldToAnalyzerMap.isEmpty() ) {
-			addWork = new UpdateLuceneWork( id, idInString, entityClass, doc );
-		}
-		else {
-			addWork = new UpdateLuceneWork( id, idInString, entityClass, doc, fieldToAnalyzerMap );
-		}
-		return addWork;
+		List<CategoryPath> categories = getCategories( entity, id, fieldToAnalyzerMap, sessionInitializer, contextualBridge );
+
+		return  new UpdateLuceneWork( id, idInString, entityClass, doc, categories, fieldToAnalyzerMap );
 	}
 
 	/**
@@ -487,6 +480,67 @@ public class DocumentBuilderIndexedEntity<T> extends AbstractDocumentBuilder<T> 
 		Set<String> processedFieldNames = new HashSet<String>();
 		buildDocumentFields( instance, doc, getMetadata(), fieldToAnalyzerMap, processedFieldNames, conversionContext, objectInitializer );
 		return doc;
+	}
+
+	public List<CategoryPath> getCategories(T instance, Serializable id, Map<String, String> fieldToAnalyzerMap, InstanceInitializer objectInitializer, ConversionContext conversionContext) {
+		List<CategoryPath> categories = new ArrayList<CategoryPath>();
+
+		objectInitializer.getClass( instance );
+		final Class<?> entityType = objectInitializer.getClass( instance );
+
+		Object unproxiedInstance = unproxy( instance, objectInitializer );
+
+		PropertiesMetadata propertiesMetadata = getMetadata();
+
+		// process the facets
+		XMember previousMember = null;
+		Object currentFieldValue = null;
+		for ( int i = 0; i < propertiesMetadata.facetPaths.size(); i++ ) {
+			XMember member = propertiesMetadata.facetGetters.get( i );
+			if ( previousMember != member ) {
+				currentFieldValue = unproxy( ReflectionHelper.getMemberValue( unproxiedInstance, member ),
+												objectInitializer );
+				previousMember = member;
+
+				if ( member.isCollection() ) {
+					if ( currentFieldValue instanceof Collection ) {
+						objectInitializer.initializeCollection( (Collection) currentFieldValue );
+					}
+					else if ( currentFieldValue instanceof Map ) {
+						objectInitializer.initializeMap( (Map) currentFieldValue );
+					}
+				}
+			}
+
+			final StringBridge facetBridge = propertiesMetadata.facetBridges.get( i );
+			final String facetPath = propertiesMetadata.facetPaths.get( i );
+			final StringBridge stringConversionContext = conversionContext.stringConversionContext( facetBridge );
+			conversionContext.pushProperty( propertiesMetadata.facetGetterNames.get( i ) );
+			try {
+				if ( member.isCollection() || member.isArray() ) {
+					if ( currentFieldValue instanceof Collection ) {
+						for ( Object value : (Collection)currentFieldValue ) {
+							categories.add( new CategoryPath( facetPath, stringConversionContext.objectToString( value ) ) );
+						}
+					}
+					else if ( currentFieldValue instanceof Map ) {
+						for ( Object value : ((Map)currentFieldValue).values() ) {
+							categories.add( new CategoryPath( facetPath, stringConversionContext.objectToString( value ) ) );
+						}
+					}
+				}
+				else {
+					categories.add( new CategoryPath( facetPath, stringConversionContext.objectToString( currentFieldValue ) ) );
+				}
+			}
+			finally {
+				conversionContext.popProperty();
+			}
+		}
+
+
+
+		return categories;
 	}
 
 	private void buildDocumentFields(Object instance,

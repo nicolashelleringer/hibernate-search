@@ -109,10 +109,11 @@ public class ProvidedIdTest {
 		assertEquals( 3, hits.totalHits );
 
 		//follows an example of what Infinispan Query actually needs to resolve a search request:
-		IndexSearcherWithPayload lowLevelSearcher = new IndexSearcherWithPayload( searcher, false, false );
+		IndexSearcherWithPayload lowLevelSearcher = new IndexSearcherWithPayload( searcher, null, false, false );
 		QueryHits queryHits = new QueryHits(
 				lowLevelSearcher, luceneQuery, null, null,
 				new TimeoutManagerImpl( luceneQuery, QueryTimeoutException.DEFAULT_TIMEOUT_EXCEPTION_FACTORY, sf.getTimingSource() ),
+				null,
 				null,
 				false,
 				null,

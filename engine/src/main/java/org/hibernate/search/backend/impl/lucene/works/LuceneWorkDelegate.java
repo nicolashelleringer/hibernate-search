@@ -23,6 +23,7 @@
  */
 package org.hibernate.search.backend.impl.lucene.works;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.backend.IndexingMonitor;
 import org.hibernate.search.backend.LuceneWork;
@@ -42,6 +43,6 @@ public interface LuceneWorkDelegate {
 	 * @param monitor will be notified of performed operations
 	 * @throws java.lang.UnsupportedOperationException when the work is not compatible with an IndexWriter.
 	 */
-	void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor);
+	void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxo, IndexingMonitor monitor);
 
 }

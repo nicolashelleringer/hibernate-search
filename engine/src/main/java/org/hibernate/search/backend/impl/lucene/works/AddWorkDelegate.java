@@ -27,6 +27,9 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.facet.index.CategoryDocumentBuilder;
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 
 import org.hibernate.search.SearchException;
@@ -57,7 +60,7 @@ class AddWorkDelegate implements LuceneWorkDelegate {
 		this.workspace = workspace;
 	}
 
-	public void performWork(LuceneWork work, IndexWriter writer, IndexingMonitor monitor) {
+	public void performWork(LuceneWork work, IndexWriter writer, TaxonomyWriter taxo, IndexingMonitor monitor) {
 		final Class<?> entityType = work.getEntityClass();
 		DocumentBuilderIndexedEntity<?> documentBuilder = workspace.getDocumentBuilder( entityType );
 		Map<String, String> fieldToAnalyzerMap = work.getFieldToAnalyzerMap();
@@ -67,7 +70,11 @@ class AddWorkDelegate implements LuceneWorkDelegate {
 			log.trace( "add to Lucene index: " + entityType + "#" + work.getId() + ":" + work.getDocument() );
 		}
 		try {
-			writer.addDocument( work.getDocument(), analyzer );
+			Document doc = work.getDocument();
+			CategoryDocumentBuilder categoryDocBuilder = new CategoryDocumentBuilder( taxo );
+			categoryDocBuilder.setCategoryPaths( work.getCategories() );
+			categoryDocBuilder.build( doc );
+			writer.addDocument( doc, analyzer );
 			workspace.notifyWorkApplied( work );
 		}
 		catch ( IOException e ) {

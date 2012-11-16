@@ -19,6 +19,7 @@
 
 package org.hibernate.search.backend.impl.lucene.works;
 
+import org.apache.lucene.facet.taxonomy.TaxonomyWriter;
 import org.apache.lucene.index.IndexWriter;
 import org.hibernate.search.backend.IndexingMonitor;
 import org.hibernate.search.backend.LuceneWork;
@@ -36,11 +37,11 @@ public class UpdateWorkDelegate implements LuceneWorkDelegate {
 		this.addDelegate = addDelegate;
 	}
 
-	public void performWork(final LuceneWork work, final IndexWriter writer, final IndexingMonitor monitor) {
+	public void performWork(final LuceneWork work, final IndexWriter writer, final TaxonomyWriter taxoWriter, final IndexingMonitor monitor) {
 		// This is the slowest implementation, needing to remove and then add to the index;
 		// see also org.hibernate.search.backend.impl.lucene.works.UpdateExtWorkDelegate
-		this.deleteDelegate.performWork( work, writer, monitor );
-		this.addDelegate.performWork( work, writer, monitor );
+		this.deleteDelegate.performWork( work, writer, taxoWriter, monitor );
+		this.addDelegate.performWork( work, writer, taxoWriter, monitor );
 	}
 
 }
