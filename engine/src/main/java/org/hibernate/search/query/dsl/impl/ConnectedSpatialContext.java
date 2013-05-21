@@ -39,7 +39,7 @@ public class ConnectedSpatialContext implements SpatialContext {
 		this.queryContext = context;
 		this.queryCustomizer = new QueryCustomizer();
 		//today we only do constant score for spatial queries
-		queryCustomizer.withConstantScore();
+		//queryCustomizer.withConstantScore();
 		spatialContext = new SpatialQueryContext();
 		this.queryBuilder = queryBuilder;
 	}

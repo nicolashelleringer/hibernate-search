@@ -115,7 +115,9 @@ public abstract class SpatialQueryBuilderFromCoordinates {
 	 * @see org.hibernate.search.spatial.Coordinates
 	 */
 	public static Query buildQuadTreeQuery(Coordinates center, double radius, String fieldName) {
-		return new FilteredQuery( new MatchAllDocsQuery(), buildQuadTreeFilter( center, radius, fieldName ) );
+		return new SpatialScoreQuery(
+				new FilteredQuery( new MatchAllDocsQuery(), buildQuadTreeFilter( center, radius, fieldName ) ),
+			center, radius, fieldName);
 	}
 
 	/**
@@ -147,13 +149,14 @@ public abstract class SpatialQueryBuilderFromCoordinates {
 	 * @see org.hibernate.search.spatial.Coordinates
 	 */
 	public static Query buildSpatialQueryByQuadTree(Coordinates center, double radius, String fieldName) {
-		return new FilteredQuery( new MatchAllDocsQuery(  ),
+		return new SpatialScoreQuery( new FilteredQuery( new MatchAllDocsQuery(),
 				buildDistanceFilter(
 						buildQuadTreeFilter( center, radius, fieldName ),
 						center,
 						radius,
 						fieldName
-				)
+				))
+				, center, radius, fieldName
 		);
 	}
 
